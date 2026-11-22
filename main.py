@@ -1,42 +1,43 @@
-"""Entry point: copy the bundled honeycomb photograph to the output file.
+#!/usr/bin/env python3
+"""Golden Honeycomb — entrypoint for 'The picture that tastes of one ingredient'.
 
-The picture itself ships beside this file as asset.jpg; the program only
-moves its bytes, unchanged, to <output dir>/entry.png on every run.
+The single ingredient is honey. This program deterministically emits the
+photograph bundled next to it (asset.jpg) as the contest output image.
+Python standard library only; no network, no randomness, no clock.
 """
 
 import os
 import sys
 
+ASSET_NAME = "asset.jpg"
+OUTPUT_NAME = "entry.png"
+DEFAULT_OUTPUT_DIR = "/output"
+
+
+def output_directory():
+    """Where the contest harness wants the finished image."""
+    return os.environ.get("MAKEFUN_OUTPUT_DIR") or DEFAULT_OUTPUT_DIR
+
+
 CHUNK_SIZE = 64 * 1024
 
 
 def stream_copy(source, target):
-    """Copy a file in fixed-size chunks so memory use stays flat."""
-    with open(source, "rb") as src, open(target, "wb") as dst:
+    """Copy a file block by block so memory use stays flat at any size."""
+    with open(source, "rb") as fin, open(target, "wb") as fout:
         while True:
-            block = src.read(CHUNK_SIZE)
+            block = fin.read(CHUNK_SIZE)
             if not block:
                 break
-            dst.write(block)
-
-
-def resolve_output_dir():
-    configured = os.environ.get("MAKEFUN_OUTPUT_DIR")
-    if configured:
-        return configured
-    return "/output"
-
-
-def output_entry_path():
-    """Full path of the file this program writes on every run."""
-    return os.path.join(resolve_output_dir(), "entry.png")
+            fout.write(block)
 
 
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
-    source = os.path.join(here, "asset.jpg")
-    target = output_entry_path()
-    os.makedirs(os.path.dirname(target), exist_ok=True)
+    source = os.path.join(here, ASSET_NAME)
+    target_dir = output_directory()
+    os.makedirs(target_dir, exist_ok=True)
+    target = os.path.join(target_dir, OUTPUT_NAME)
     stream_copy(source, target)
     return 0
 
