@@ -5,8 +5,19 @@ moves its bytes, unchanged, to <output dir>/entry.png on every run.
 """
 
 import os
-import shutil
 import sys
+
+CHUNK_SIZE = 64 * 1024
+
+
+def stream_copy(source, target):
+    """Copy a file in fixed-size chunks so memory use stays flat."""
+    with open(source, "rb") as src, open(target, "wb") as dst:
+        while True:
+            block = src.read(CHUNK_SIZE)
+            if not block:
+                break
+            dst.write(block)
 
 
 def resolve_output_dir():
@@ -16,14 +27,17 @@ def resolve_output_dir():
     return "/output"
 
 
+def output_entry_path():
+    """Full path of the file this program writes on every run."""
+    return os.path.join(resolve_output_dir(), "entry.png")
+
+
 def main():
     here = os.path.dirname(os.path.abspath(__file__))
     source = os.path.join(here, "asset.jpg")
-    target_dir = resolve_output_dir()
-    os.makedirs(target_dir, exist_ok=True)
-    target = os.path.join(target_dir, "entry.png")
-    with open(source, "rb") as src, open(target, "wb") as dst:
-        shutil.copyfileobj(src, dst, length=1024 * 256)
+    target = output_entry_path()
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    stream_copy(source, target)
     return 0
 
 
